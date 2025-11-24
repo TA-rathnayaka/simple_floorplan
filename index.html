@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete 3D Floorplan</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f5f5f5; font-family: Arial, sans-serif; }
+        #plan-container { width: 100vw; height: 100vh; }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 300px;
+        }
+        #info h3 { margin: 0 0 10px 0; color: #333; font-size: 16px; }
+        #info p { margin: 5px 0; color: #666; font-size: 13px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div id="plan-container"></div>
+    <div id="info">
+        <h3>🏠 Complete Living Room</h3>
+        <p><strong>Furniture:</strong> Sofas, tables, TV unit, dining set, shelves</p>
+        <p><strong>Decor:</strong> Plants, vases, artwork, lamps</p>
+        <p><strong>Tip:</strong> Rotate with mouse to explore!</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <script>
+        // --- 1. CONFIGURATION ---
+        const LOCAL_PATH = "./models/";
+        const REMOTE_PATH = "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/";
+
+        const modelLibrary = {
+            // Furniture
+            "sofa": LOCAL_PATH + "sofa.glb",
+            "door": LOCAL_PATH + "door.glb",
+            "window": LOCAL_PATH + "window.glb",
+            "electronics": REMOTE_PATH + "BoomBox/glTF-Binary/BoomBox.glb",
+            "table": REMOTE_PATH + "SheenChair/glTF-Binary/SheenChair.glb",
+            "chair": REMOTE_PATH + "SheenChair/glTF-Binary/SheenChair.glb",
+            
+            // Decor items - we'll create these procedurally since models aren't available
+            "plant": LOCAL_PATH + "plant.glb",
+            "vase": LOCAL_PATH + "vase.glb",
+            "lamp": LOCAL_PATH + "lamp.glb",
+            "shelf": null,
+            "artwork": LOCAL_PATH + "artwork.glb",
+            "rug": null
+        };
+
+        // --- 2. FLOORPLAN DATA ---
+        const data = {
+            "walls": [
+                {"id": "w1", "path": [[0, 0], [10, 0]], "thickness": 0.2, "height": 3},
+                {"id": "w2", "path": [[10, 0], [10, 10]], "thickness": 0.2, "height": 3},
+                {"id": "w3", "path": [[10, 10], [0, 10]], "thickness": 0.2, "height": 3},
+                {"id": "w4", "path": [[0, 10], [0, 0]], "thickness": 0.2, "height": 3}
+            ],
+            "rooms": [{"id": "r1", "polygon": [[0.2, 0.2], [9.8, 0.2], [9.8, 9.8], [0.2, 9.8]], "name": "Living Room"}],
+            "openings": [
+                {"id": "d1", "type": "door", "host": "w1", "at": 5.0, "width": 1.0, "height": 2.1},
+                {"id": "wnd1", "type": "window", "host": "w2", "at": 3.0, "width": 1.5, "height": 1.2, "sill": 1.0},
+                {"id": "wnd2", "type": "window", "host": "w2", "at": 7.0, "width": 1.5, "height": 1.2, "sill": 1.0},
+                {"id": "wnd3", "type": "window", "host": "w3", "at": 5.0, "width": 2.0, "height": 1.4, "sill": 1.0}
+            ],
+            "furniture": [
+                // Main Seating Area (Center-Left)
+                {"category": "sofa", "position": [2.5, 5], "dimensions": [2.5, 1.0], "rotation": 90, "height": 0.85},
+                {"category": "sofa", "position": [4.5, 3.5], "dimensions": [2.0, 0.9], "rotation": 0, "height": 0.8},
+                {"category": "table", "position": [3.5, 5], "dimensions": [1.2, 0.8], "rotation": 0, "height": 0.4},
+                {"category": "rug", "position": [3.5, 5], "dimensions": [3.5, 3.0], "rotation": 0, "height": 0.02},
+                
+                // Entertainment Wall (Right)
+                {"category": "shelf", "position": [9.3, 5], "dimensions": [0.4, 3.5], "rotation": 0, "height": 0.6},
+                {"category": "electronics", "position": [9.3, 5], "dimensions": [0.35, 1.5], "rotation": 180, "height": 0.65},
+                {"category": "table", "position": [7, 5], "dimensions": [0.9, 0.9], "rotation": 0, "height": 0.5},
+                
+                // Dining Area (Back-Right)
+                {"category": "table", "position": [7.5, 8.5], "dimensions": [1.6, 1.0], "rotation": 0, "height": 0.75},
+                {"category": "chair", "position": [6.7, 8.5], "dimensions": [0.5, 0.5], "rotation": 90, "height": 0.85},
+                {"category": "chair", "position": [8.3, 8.5], "dimensions": [0.5, 0.5], "rotation": 270, "height": 0.85},
+                {"category": "chair", "position": [7.5, 7.9], "dimensions": [0.5, 0.5], "rotation": 0, "height": 0.85},
+                {"category": "chair", "position": [7.5, 9.1], "dimensions": [0.5, 0.5], "rotation": 180, "height": 0.85},
+                
+                // Reading Corner (Back-Left)
+                {"category": "chair", "position": [2, 8.5], "dimensions": [0.85, 0.85], "rotation": 45, "height": 0.9},
+                {"category": "table", "position": [3, 8.5], "dimensions": [0.5, 0.5], "rotation": 0, "height": 0.55},
+                {"category": "lamp", "position": [3, 8.5], "dimensions": [0.25, 0.25], "rotation": 0, "height": 0.6},
+                
+                // Storage & Shelving
+                {"category": "shelf", "position": [0.6, 2], "dimensions": [0.4, 1.5], "rotation": 0, "height": 1.8},
+                {"category": "shelf", "position": [0.6, 8], "dimensions": [0.4, 1.2], "rotation": 0, "height": 1.2},
+                
+                // Plants & Decor
+                {"category": "plant", "position": [1, 1], "dimensions": [0.4, 0.4], "rotation": 0, "height": 1.2},
+                {"category": "plant", "position": [9, 1], "dimensions": [0.35, 0.35], "rotation": 0, "height": 0.8},
+                {"category": "plant", "position": [1, 9], "dimensions": [0.5, 0.5], "rotation": 0, "height": 1.5},
+                {"category": "plant", "position": [9, 9], "dimensions": [0.3, 0.3], "rotation": 0, "height": 0.6},
+                {"category": "plant", "position": [3.5, 5.8], "dimensions": [0.25, 0.25], "rotation": 0, "height": 0.5},
+                
+                // Vases & Small Decor
+                {"category": "vase", "position": [0.6, 2], "dimensions": [0.2, 0.2], "rotation": 0, "height": 0.35},
+                {"category": "vase", "position": [7.5, 8.5], "dimensions": [0.15, 0.15], "rotation": 0, "height": 0.25},
+                {"category": "vase", "position": [9.3, 4], "dimensions": [0.18, 0.18], "rotation": 0, "height": 0.3},
+                
+                // Wall Art
+              {"category": "artwork", "position": [5, 9.85], "dimensions": [1.2, 0.05], "rotation": 0, "height": 1.8},
+                {"category": "artwork", "position": [0.15, 7.5], "dimensions": [0.05, 0.9], "rotation": 0, "height": 1.6},
+                
+                // Additional Lighting
+                {"category": "lamp", "position": [2.5, 3.5], "dimensions": [0.2, 0.2], "rotation": 0, "height": 0.5},
+                {"category": "lamp", "position": [9, 8.5], "dimensions": [0.25, 0.25], "rotation": 0, "height": 0.55}
+            ]
+        };
+
+        // --- 3. PROCEDURAL OBJECT CREATION ---
+        function createPlant(width, height) {
+            const group = new THREE.Group();
+            
+            // Pot
+            const potGeo = new THREE.CylinderGeometry(width * 0.4, width * 0.5, height * 0.25, 8);
+            const potMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+            const pot = new THREE.Mesh(potGeo, potMat);
+            pot.position.y = height * 0.125;
+            pot.castShadow = true;
+            pot.receiveShadow = true;
+            group.add(pot);
+            
+            // Soil
+            const soilGeo = new THREE.CircleGeometry(width * 0.38, 8);
+            const soilMat = new THREE.MeshLambertMaterial({ color: 0x3d2817 });
+            const soil = new THREE.Mesh(soilGeo, soilMat);
+            soil.rotation.x = -Math.PI / 2;
+            soil.position.y = height * 0.25;
+            group.add(soil);
+            
+            // Leaves (spheres to represent foliage)
+            const leafMat = new THREE.MeshLambertMaterial({ color: 0x228B22 });
+            for (let i = 0; i < 5; i++) {
+                const leafSize = width * (0.3 + Math.random() * 0.3);
+                const leaf = new THREE.Mesh(new THREE.SphereGeometry(leafSize, 8, 8), leafMat);
+                const angle = (i / 5) * Math.PI * 2;
+                leaf.position.x = Math.cos(angle) * width * 0.3;
+                leaf.position.z = Math.sin(angle) * width * 0.3;
+                leaf.position.y = height * 0.5 + Math.random() * height * 0.4;
+                leaf.castShadow = true;
+                group.add(leaf);
+            }
+            
+            return group;
+        }
+
+        function createVase(width, height) {
+            const group = new THREE.Group();
+            
+            const vaseGeo = new THREE.CylinderGeometry(width * 0.3, width * 0.4, height, 8);
+            const vaseMat = new THREE.MeshStandardMaterial({ 
+                color: 0xE8E8E8,
+                metalness: 0.2,
+                roughness: 0.5
+            });
+            const vase = new THREE.Mesh(vaseGeo, vaseMat);
+            vase.position.y = height / 2;
+            vase.castShadow = true;
+            vase.receiveShadow = true;
+            group.add(vase);
+            
+            // Flower stems
+            const stemMat = new THREE.MeshLambertMaterial({ color: 0x90EE90 });
+            for (let i = 0; i < 3; i++) {
+                const stem = new THREE.Mesh(
+                    new THREE.CylinderGeometry(width * 0.02, width * 0.02, height * 0.8, 4),
+                    stemMat
+                );
+                const angle = (i / 3) * Math.PI * 2;
+                stem.position.x = Math.cos(angle) * width * 0.15;
+                stem.position.z = Math.sin(angle) * width * 0.15;
+                stem.position.y = height * 0.9;
+                
+                // Flower head
+                const flowerMat = new THREE.MeshLambertMaterial({ 
+                    color: [0xFF69B4, 0xFF6347, 0xFFD700][i]
+                });
+                const flower = new THREE.Mesh(
+                    new THREE.SphereGeometry(width * 0.15, 6, 6),
+                    flowerMat
+                );
+                flower.position.y = height * 0.4;
+                stem.add(flower);
+                
+                group.add(stem);
+            }
+            
+            return group;
+        }
+
+        function createLamp(width, height) {
+            const group = new THREE.Group();
+            
+            // Base
+            const baseGeo = new THREE.CylinderGeometry(width * 0.4, width * 0.5, height * 0.15, 8);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x4A4A4A, metalness: 0.6 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = height * 0.075;
+            base.castShadow = true;
+            group.add(base);
+            
+            // Pole
+            const poleGeo = new THREE.CylinderGeometry(width * 0.05, width * 0.05, height * 0.7, 8);
+            const pole = new THREE.Mesh(poleGeo, baseMat);
+            pole.position.y = height * 0.5;
+            pole.castShadow = true;
+            group.add(pole);
+            
+            // Shade
+            const shadeGeo = new THREE.CylinderGeometry(width * 0.7, width * 0.5, height * 0.3, 8);
+            const shadeMat = new THREE.MeshStandardMaterial({ 
+                color: 0xFFFACD,
+                emissive: 0xFFFF99,
+                emissiveIntensity: 0.3
+            });
+            const shade = new THREE.Mesh(shadeGeo, shadeMat);
+            shade.position.y = height * 0.85;
+            shade.castShadow = true;
+            group.add(shade);
+            
+            return group;
+        }
+
+        function createShelf(width, depth, height) {
+            const group = new THREE.Group();
+            const shelfMat = new THREE.MeshLambertMaterial({ color: 0x8B7355 });
+            
+            // Create 3-4 shelves
+            const numShelves = Math.floor(height / 0.4) + 1;
+            for (let i = 0; i < numShelves; i++) {
+                const shelf = new THREE.Mesh(
+                    new THREE.BoxGeometry(depth, 0.05, width),
+                    shelfMat
+                );
+                shelf.position.y = (i / (numShelves - 1)) * height;
+                shelf.castShadow = true;
+                shelf.receiveShadow = true;
+                group.add(shelf);
+            }
+            
+            // Side panels
+            const sideMat = new THREE.MeshLambertMaterial({ color: 0x6B5345 });
+            const leftSide = new THREE.Mesh(
+                new THREE.BoxGeometry(depth, height, 0.05),
+                sideMat
+            );
+            leftSide.position.z = -width / 2;
+            leftSide.position.y = height / 2;
+            group.add(leftSide);
+            
+            const rightSide = leftSide.clone();
+            rightSide.position.z = width / 2;
+            group.add(rightSide);
+            
+            return group;
+        }
+
+        function createArtwork(width, depth, height) {
+            const group = new THREE.Group();
+            
+            // Frame
+            const frameGeo = new THREE.BoxGeometry(depth, height, width);
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x2C2C2C });
+            const frame = new THREE.Mesh(frameGeo, frameMat);
+            frame.castShadow = true;
+            group.add(frame);
+            
+            // Canvas
+            const canvasGeo = new THREE.BoxGeometry(depth * 0.5, height * 0.9, width * 0.9);
+            const canvasMat = new THREE.MeshStandardMaterial({ 
+                color: Math.random() > 0.5 ? 0x4A90E2 : 0xE2A14A
+            });
+            const canvas = new THREE.Mesh(canvasGeo, canvasMat);
+            canvas.position.x = depth * 0.25;
+            group.add(canvas);
+            
+            return group;
+        }
+
+        function createRug(width, depth) {
+            const rugGeo = new THREE.BoxGeometry(depth, 0.02, width);
+            const rugMat = new THREE.MeshStandardMaterial({ 
+                color: 0xC19A6B,
+                roughness: 0.9
+            });
+            const rug = new THREE.Mesh(rugGeo, rugMat);
+            rug.position.y = 0.01; // Slightly above floor to prevent z-fighting
+            rug.receiveShadow = true;
+            return rug;
+        }
+
+        // --- 4. RENDER LOGIC ---
+        (function() {
+            const container = document.getElementById("plan-container");
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf5f5f5);
+
+            const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(8, 20, 18);
+            
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.target.set(5, 0, 5);
+            controls.update();
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(15, 25, 15);
+            dirLight.castShadow = true;
+            dirLight.shadow.camera.left = -20;
+            dirLight.shadow.camera.right = 20;
+            dirLight.shadow.camera.top = 20;
+            dirLight.shadow.camera.bottom = -20;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            scene.add(dirLight);
+
+            // Floor
+            const floorGeo = new THREE.PlaneGeometry(10, 10);
+            const floorMat = new THREE.MeshStandardMaterial({ 
+                color: 0xD2B48C,
+                roughness: 0.8
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.set(5, 0, 5); // Center the floor
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.ShadowMaterial({ opacity: 0.1 }));
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.01;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            const wallsById = {};
+            const group = new THREE.Group();
+            scene.add(group);
+
+            // Helpers
+            const matWall = new THREE.MeshLambertMaterial({ color: 0xf8f8f8 });
+            const matFallback = new THREE.MeshLambertMaterial({ color: 0x9ca3af });
+            
+            function createBox(w, h, d, material, x, y, z, rotY) {
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+                mesh.position.set(x, y, z);
+                mesh.rotation.y = rotY || 0;
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                return mesh;
+            }
+
+            // Walls
+            data.walls.forEach(w => {
+                const dx = w.path[1][0] - w.path[0][0];
+                const dz = w.path[1][1] - w.path[0][1];
+                const len = Math.sqrt(dx*dx + dz*dz);
+                const ang = Math.atan2(dz, dx);
+                
+                wallsById[w.id] = { x1: w.path[0][0], z1: w.path[0][1], angle: ang, thickness: w.thickness };
+
+                const wallOpenings = (data.openings || [])
+                    .filter(op => op.host === w.id)
+                    .sort((a, b) => a.at - b.at);
+
+                let currentX = 0;
+
+                wallOpenings.forEach(op => {
+                    const opStart = op.at - (op.width / 2);
+                    const opEnd = op.at + (op.width / 2);
+                    const opHeight = op.height;
+                    const opSill = op.sill || 0;
+
+                    if (opStart > currentX) {
+                        const segLen = opStart - currentX;
+                        const segMid = currentX + segLen / 2;
+                        const mx = w.path[0][0] + Math.cos(ang) * segMid;
+                        const mz = w.path[0][1] + Math.sin(ang) * segMid;
+                        group.add(createBox(segLen, w.height, w.thickness, matWall, mx, w.height/2, mz, -ang));
+                    }
+
+                    if (opSill > 0) {
+                        const mx = w.path[0][0] + Math.cos(ang) * op.at;
+                        const mz = w.path[0][1] + Math.sin(ang) * op.at;
+                        group.add(createBox(op.width, opSill, w.thickness, matWall, mx, opSill/2, mz, -ang));
+                    }
+
+                    const lintelHeight = w.height - (opSill + opHeight);
+                    if (lintelHeight > 0) {
+                        const mx = w.path[0][0] + Math.cos(ang) * op.at;
+                        const mz = w.path[0][1] + Math.sin(ang) * op.at;
+                        const ly = (opSill + opHeight) + lintelHeight/2;
+                        group.add(createBox(op.width, lintelHeight, w.thickness, matWall, mx, ly, mz, -ang));
+                    }
+
+                    currentX = opEnd;
+                });
+
+                if (currentX < len) {
+                    const segLen = len - currentX;
+                    const segMid = currentX + segLen / 2;
+                    const mx = w.path[0][0] + Math.cos(ang) * segMid;
+                    const mz = w.path[0][1] + Math.sin(ang) * segMid;
+                    group.add(createBox(segLen, w.height, w.thickness, matWall, mx, w.height/2, mz, -ang));
+                }
+            });
+
+            // Load Models Function
+            const loader = new THREE.GLTFLoader();
+            
+            function loadItem(item, type) {
+                const rotY = (item.rotation || 0) * Math.PI / 180;
+                let posX = 0, posY = 0, posZ = 0, rot = 0;
+                let dimX = 0, dimY = 0, dimZ = 0;
+
+                if (type === 'furniture') {
+                    posX = item.position[0];
+                    posZ = item.position[1];
+                    posY = dimY / 2; // Position at half height to sit on floor
+                    rot = rotY;
+                    dimX = item.dimensions[0];
+                    dimZ = item.dimensions[1];
+                    dimY = item.height || 0.8;
+                } else if (type === 'opening') {
+                    const wall = wallsById[item.host];
+                    if(!wall) return;
+                    const dist = item.at;
+                    posX = wall.x1 + Math.cos(wall.angle) * dist;
+                    posZ = wall.z1 + Math.sin(wall.angle) * dist;
+                    posY = (item.sill || 0) + item.height/2; 
+                    rot = -wall.angle;
+                    dimX = item.width;
+                    dimY = item.height;
+                    dimZ = wall.thickness + 0.1;
+                }
+
+                // 1. Try loading from Model Library (GLB)
+                const url = modelLibrary[item.category || item.type];
+                
+                if (url) {
+                    loader.load(url, (gltf) => {
+                        const model = gltf.scene;
+                        const wrapper = new THREE.Group();
+                        wrapper.position.set(posX, 0, posZ);
+                        wrapper.rotation.y = rot;
+
+                        const box = new THREE.Box3().setFromObject(model);
+                        const size = box.getSize(new THREE.Vector3());
+                        const center = box.getCenter(new THREE.Vector3());
+
+                        model.position.x = -center.x;
+                        model.position.y = -box.min.y;
+                        model.position.z = -center.z;
+                        
+                        const scX = dimX / (size.x || 1);
+                        const scY = dimY / (size.y || 1);
+                        const scZ = dimZ / (size.z || 1);
+                        
+                        if (type === 'opening') {
+                            model.scale.set(scX, scY, scZ);
+                            wrapper.position.y = posY - (dimY/2);
+                        } else {
+                            const minSc = Math.min(scX, scZ) * 0.9;
+                            model.scale.set(minSc, minSc, minSc);
+                        }
+
+                        model.traverse(n => { if(n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+                        wrapper.add(model);
+                        group.add(wrapper);
+                    }, undefined, (err) => {
+                        console.error("Could not load model:", url, err);
+                        // Fallback to box if load fails
+                        group.add(createBox(dimX, dimY, dimZ, matFallback, posX, posY || dimY/2, posZ, rot));
+                    });
+                    return; // Stop here if we have a URL
+                }
+
+                // 2. Try Procedural Generation
+                if (['plant', 'vase', 'lamp', 'shelf', 'artwork', 'rug'].includes(item.category)) {
+                    let obj;
+                    
+                    switch(item.category) {
+                        case 'plant':
+                            obj = createPlant(dimX, dimY);
+                            break;
+                        case 'vase':
+                            obj = createVase(dimX, dimY);
+                            break;
+                        case 'lamp':
+                            obj = createLamp(dimX, dimY);
+                            break;
+                        case 'shelf':
+                            obj = createShelf(dimZ, dimX, dimY);
+                            break;
+                        case 'artwork':
+                            obj = createArtwork(dimZ, dimX, dimY);
+                            break;
+                        case 'rug':
+                            obj = createRug(dimZ, dimX);
+                            break;
+                    }
+                    
+                    if (obj) {
+                        obj.position.set(posX, 0, posZ); // Keep at floor level (y=0) for procedural objects
+                        obj.rotation.y = rot;
+                        group.add(obj);
+                    }
+                    return;
+                }
+
+                // 3. Fallback Box
+                group.add(createBox(dimX, dimY, dimZ, matFallback, posX, posY || dimY/2, posZ, rot));
+            }
+
+            // Loop Data
+            if (data.openings) data.openings.forEach(op => loadItem(op, 'opening'));
+            if (data.furniture) data.furniture.forEach(f => loadItem(f, 'furniture'));
+
+            // Animate
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        })();
+    </script>
+</body>
+</html>
