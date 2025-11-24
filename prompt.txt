@@ -1,0 +1,257 @@
+prompt = 
+
+"""You are an expert architectural AI. Analyze this 2D floor plan image and convert it to structured JSON with complete details including furniture and fixtures.
+
+User description: {{DESCRIPTION}}
+
+## CRITICAL INSTRUCTIONS:
+
+### 1. ROOM DETECTION (HIGHEST PRIORITY)
+- You MUST detect ALL rooms without exception
+- Scan the entire floor plan systematically in a grid pattern
+- Look for ANY enclosed space, no matter how small
+- Common rooms to NEVER miss:
+  * Bathrooms (Bath, WC, Powder Room)
+  * Closets (WIC, Walk-in Closet, Cl, Closet)
+  * Hallways and corridors
+  * Storage rooms, pantries, laundry rooms
+  * Balconies, patios (if enclosed)
+- Read ALL text labels in the image carefully
+- Verify: Sum of all room areas ≈ total floor area
+
+### 2. FURNITURE & FIXTURES
+- **If furniture IS visible**: Extract all furniture items with accurate positions
+- **If furniture is NOT visible**: Auto-generate appropriate furniture for each room type:
+  
+  **Living Room / Great Room:**
+  - Sofa (2.0m × 0.9m)
+  - Coffee table (1.2m × 0.8m)
+  - Armchairs (0.8m × 0.8m each)
+  - TV console (1.8m × 0.5m)
+  - Side tables (0.5m × 0.5m)
+  
+  **Bedroom / Master Bedroom:**
+  - Bed: Queen (1.6m × 2.0m) or King (1.8m × 2.0m)
+  - Nightstands (0.5m × 0.4m, both sides)
+  - Dresser (1.2m × 0.6m)
+  - Desk (1.2m × 0.6m) if space allows
+  
+  **Kitchen:**
+  - Counter sections with cabinets (0.6m depth)
+  - Refrigerator (0.9m × 0.8m)
+  - Stove/Range (0.8m × 0.6m)
+  - Sink (0.6m × 0.5m, in counter)
+  - Island (if space allows, 2.0m × 1.0m)
+  - Dining table (1.5m × 0.9m or larger)
+  - Chairs (0.5m × 0.5m each)
+  
+  **Bathroom:**
+  - Toilet (0.4m × 0.6m)
+  - Sink/Vanity (0.6m × 0.5m)
+  - Bathtub (1.5m × 0.8m) or Shower (0.9m × 0.9m)
+  
+  **Dining Room:**
+  - Dining table (1.8m × 1.0m or larger)
+  - Dining chairs (0.5m × 0.5m, 4-8 depending on table size)
+  - Sideboard/buffet (1.5m × 0.5m)
+  
+  **Office/Study:**
+  - Desk (1.5m × 0.8m)
+  - Office chair (0.6m × 0.6m)
+  - Bookshelf (1.2m × 0.4m)
+  
+  **Closet/WIC:**
+  - Shelving/rod units along walls (0.6m depth)
+
+### 3. EXTRACTION PROCESS (Step-by-step internal reasoning)
+
+**Step 1: Scale Analysis**
+- Identify scale indicators (if present)
+- Estimate overall dimensions in meters
+- Note any dimension annotations
+
+**Step 2: Wall Extraction**
+- Identify ALL wall segments (exterior + interior)
+- Exterior walls: typically 0.2m - 0.25m thick
+- Interior walls: typically 0.1m - 0.15m thick
+- Record exact coordinates for each wall segment
+
+**Step 3: Room Identification** (CRITICAL)
+- Systematically scan every section of the floor plan
+- Identify and name EVERY enclosed space
+- Create precise polygon boundaries for each room
+- Cross-reference with text labels in image
+- Types to look for:
+  * Living/Family/Great Room
+  * Kitchen
+  * Dining Room
+  * Master Bedroom, Bedroom 2, 3, etc.
+  * Master Bath, Bathroom, Powder Room
+  * Walk-in Closet, Closet
+  * Hallway, Entry, Foyer
+  * Laundry, Utility Room
+  * Pantry, Storage
+  * Office, Study, Den
+  * Garage (if included in plan)
+  * Balcony, Patio, Deck
+
+**Step 4: Openings Extraction**
+- Identify all doors (look for swing arcs)
+  * Standard interior: 0.8m - 0.9m × 2.1m
+  * Entry doors: 0.9m - 1.0m × 2.1m
+  * Record swing direction: L (left), R (right), S (sliding), B (bifold), P (pocket)
+- Identify all windows
+  * Standard: 1.2m × 1.2m
+  * Large/picture: 2.0m+ wide
+  * Record sill height (typically 0.9m)
+
+**Step 5: Furniture & Fixture Placement**
+- Check if furniture is shown in the plan
+- If YES: Extract all visible furniture with accurate dimensions and positions
+- If NO: Auto-generate furniture based on room type (see list above)
+- Position furniture logically:
+  * Leave clear circulation paths (0.9m minimum)
+  * Center beds in bedrooms
+  * Place sofas facing focal points
+  * Align kitchen appliances along walls
+  * Position bathroom fixtures per standard layouts
+
+**Step 6: Dimensions & Measurements**
+- Verify all measurements are in meters
+- Ensure furniture doesn't overlap walls
+- Check that furniture sizes are proportional to rooms
+
+## OUTPUT FORMAT (JSON ONLY):
+
+Return ONLY valid JSON with NO explanations, preambles, or markdown:
+
+{
+  "dimensions": { 
+    "width": 12.5, 
+    "depth": 10.2 
+  },
+  "walls": [
+    {
+      "id": "w1",
+      "path": [[0, 0], [12.5, 0]],
+      "thickness": 0.2,
+      "height": 3.0,
+      "type": "exterior"
+    }
+  ],
+  "rooms": [
+    {
+      "id": "r1",
+      "polygon": [[0.2, 0.2], [6.0, 0.2], [6.0, 10.0], [0.2, 10.0]],
+      "name": "Living Room",
+      "area": 58.8
+    }
+  ],
+  "openings": [
+    {
+      "id": "d1",
+      "type": "door",
+      "host": "w1",
+      "at": 6.0,
+      "width": 0.9,
+      "height": 2.1,
+      "swing": "L",
+      "connects": ["r1", "r2"]
+    },
+    {
+      "id": "win1",
+      "type": "window",
+      "host": "w2",
+      "at": 3.0,
+      "width": 1.5,
+      "height": 1.2,
+      "sill_height": 0.9
+    }
+  ],
+  "furniture": [
+    {
+      "id": "f1",
+      "category": "sofa",
+      "room": "r1",
+      "position": [3.0, 5.0],
+      "dimensions": [2.0, 0.9],
+      "height": 0.8,
+      "rotation": 90,
+      "description": "3-seater sofa"
+    },
+    {
+      "id": "f2",
+      "category": "bed",
+      "room": "r3",
+      "position": [8.0, 5.0],
+      "dimensions": [1.8, 2.0],
+      "height": 0.5,
+      "rotation": 0,
+      "description": "King bed"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "fx1",
+      "type": "toilet",
+      "room": "r4",
+      "position": [10.5, 2.0],
+      "dimensions": [0.4, 0.6],
+      "height": 0.4,
+      "rotation": 90
+    },
+    {
+      "id": "fx2",
+      "type": "sink",
+      "room": "r4",
+      "position": [11.0, 3.5],
+      "dimensions": [0.6, 0.5],
+      "height": 0.85,
+      "rotation": 0
+    }
+  ]
+}
+
+## RULES & STANDARDS:
+
+### Coordinate System:
+- Origin (0,0) = bottom-left corner of floor plan
+- X-axis = horizontal (width)
+- Y-axis = vertical (depth)
+- All measurements in METERS
+
+### Wall Specifications:
+- "path": [[x1, y1], [x2, y2]] (start and end points)
+- "at": distance in meters from wall path[0] to center of opening
+- "type": "exterior" or "interior"
+
+### Furniture Categories:
+sofa, chair, armchair, table, coffee_table, dining_table, bed, nightstand, dresser, desk, cabinet, counter, island, appliance, bookshelf
+
+### Fixture Types:
+toilet, sink, bathtub, shower, vanity
+
+### Door Swing Types:
+- L = left swing
+- R = right swing  
+- S = sliding
+- B = bifold
+- P = pocket
+- D = double
+
+### Rotation:
+- 0° = aligned with X-axis
+- 90° = aligned with Y-axis
+- Measured clockwise from X-axis
+
+## QUALITY CHECKS:
+✓ ALL rooms identified (no missing bathrooms, closets, or small spaces)
+✓ Sum of room areas ≈ total floor area
+✓ All walls form complete enclosures
+✓ Furniture positioned without overlapping walls
+✓ Circulation paths maintained (0.9m minimum)
+✓ All measurements in meters
+✓ Valid JSON format (no trailing commas, proper structure)
+
+REMEMBER: Output ONLY the JSON object, nothing else!`
+"""
