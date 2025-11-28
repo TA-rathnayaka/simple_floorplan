@@ -1,6 +1,4 @@
-prompt = 
-
-"""You are an expert architectural AI. Analyze this 2D floor plan image and convert it to structured JSON with complete details including furniture and fixtures.
+You are an expert architectural AI. Analyze this 2D floor plan image and convert it to structured JSON compatible with a Three.js 3D renderer.
 
 User description: {{DESCRIPTION}}
 
@@ -21,47 +19,88 @@ User description: {{DESCRIPTION}}
 
 ### 2. FURNITURE & FIXTURES
 - **If furniture IS visible**: Extract all furniture items with accurate positions
-- **If furniture is NOT visible**: Auto-generate appropriate furniture for each room type:
-  
-  **Living Room / Great Room:**
-  - Sofa (2.0m × 0.9m)
-  - Coffee table (1.2m × 0.8m)
-  - Armchairs (0.8m × 0.8m each)
-  - TV console (1.8m × 0.5m)
-  - Side tables (0.5m × 0.5m)
-  
-  **Bedroom / Master Bedroom:**
-  - Bed: Queen (1.6m × 2.0m) or King (1.8m × 2.0m)
-  - Nightstands (0.5m × 0.4m, both sides)
-  - Dresser (1.2m × 0.6m)
-  - Desk (1.2m × 0.6m) if space allows
-  
-  **Kitchen:**
-  - Counter sections with cabinets (0.6m depth)
-  - Refrigerator (0.9m × 0.8m)
-  - Stove/Range (0.8m × 0.6m)
-  - Sink (0.6m × 0.5m, in counter)
-  - Island (if space allows, 2.0m × 1.0m)
-  - Dining table (1.5m × 0.9m or larger)
-  - Chairs (0.5m × 0.5m each)
-  
-  **Bathroom:**
-  - Toilet (0.4m × 0.6m)
-  - Sink/Vanity (0.6m × 0.5m)
-  - Bathtub (1.5m × 0.8m) or Shower (0.9m × 0.9m)
-  
-  **Dining Room:**
-  - Dining table (1.8m × 1.0m or larger)
-  - Dining chairs (0.5m × 0.5m, 4-8 depending on table size)
-  - Sideboard/buffet (1.5m × 0.5m)
-  
-  **Office/Study:**
-  - Desk (1.5m × 0.8m)
-  - Office chair (0.6m × 0.6m)
-  - Bookshelf (1.2m × 0.4m)
-  
-  **Closet/WIC:**
-  - Shelving/rod units along walls (0.6m depth)
+- **If furniture is NOT visible**: Auto-generate appropriate furniture for each room type
+
+**Furniture Categories Available:**
+
+**Living Room:**
+- sofa, chair, table, tv_stand, electronics, shelf, plant, vase, lamp, artwork, rug
+
+**Kitchen:**
+- refrigerator, stove, kitchen_cabinet, kitchen_counter, sink, table, chair, plant, vase
+
+**Bedroom:**
+- bed, nightstand, wardrobe, dresser, chair, lamp, plant, artwork, rug
+
+**Bathroom:**
+- toilet, bathtub, bathroom_sink, shower, bathroom_cabinet, plant, vase
+
+**Universal:**
+- door, window
+
+**Standard Furniture by Room Type:**
+
+**Living Room / Great Room:**
+- Sofa (2.5m × 1.0m, height 0.85m)
+- Coffee table (1.2m × 0.8m, height 0.4m)
+- Chairs (0.85m × 0.85m, height 0.9m)
+- TV Stand (1.8m × 0.5m, height 0.6m)
+- Electronics/Stereo (0.35m × 0.4m, height 0.3m)
+- Side tables (0.5m × 0.5m, height 0.5m)
+- Shelves (0.4m depth × 1.5-3.5m width, height 0.6-1.8m)
+- Plants (0.3-0.5m × 0.3-0.5m, height 0.6-1.5m)
+- Lamps (0.2-0.25m × 0.2-0.25m, height 0.5-0.6m)
+- Rug (3.0-3.5m × 2.5-3.0m, height 0.02m)
+- Artwork (1.0-1.5m width × 0.05m depth, height 1.6-2.0m wall-mounted)
+
+**Bedroom / Master Bedroom:**
+- Bed: Queen (1.6m × 2.0m) or King (2.0m × 2.2m), height 0.5m
+- Nightstands (0.5m × 0.4m, height 0.55m, both sides)
+- Dresser (1.2m × 0.6m, height 0.85m)
+- Wardrobe (1.2m × 0.6m, height 2.0m)
+- Chair (0.85m × 0.85m, height 0.9m) if space allows
+- Lamp (0.2m × 0.2m, height 0.5m)
+- Plants (0.3m × 0.3m, height 0.8m)
+- Artwork (1.0m × 0.05m, height 1.5m)
+- Rug (2.5m × 2.0m, height 0.02m)
+
+**Kitchen:**
+- Refrigerator (0.9m × 0.8m, height 1.8m)
+- Stove (0.9m × 0.6m, height 0.9m)
+- Kitchen Counter (2.5m × 0.6m, height 0.9m)
+- Kitchen Cabinet (1.5m × 0.6m, height 2.0m or 0.4m upper)
+- Sink (0.8m × 0.6m, height 0.9m) - usually integrated in counter
+- Kitchen Table/Island (2.0m × 1.0m, height 0.9m)
+- Chairs (0.5m × 0.5m, height 0.85m, quantity: 4-6)
+- Plants (0.25m × 0.25m, height 0.5m)
+- Vases (0.15-0.2m × 0.15-0.2m, height 0.25-0.35m)
+
+**Dining Room:**
+- Table (1.8m × 1.0m or larger, height 0.75m)
+- Chairs (0.5m × 0.5m, height 0.85m, quantity: 4-8)
+- Shelf/Buffet (1.5m × 0.5m, height 0.8m)
+- Vases (0.15m × 0.15m, height 0.25m)
+- Plants (0.3m × 0.3m, height 0.8m)
+
+**Bathroom:**
+- Toilet (0.5m × 0.7m, height 0.8m)
+- Bathtub (1.7m × 0.8m, height 0.6m)
+- Bathroom Sink (0.6m × 0.5m, height 0.85m)
+- Shower (1.0m × 1.0m, height 2.0m)
+- Bathroom Cabinet (0.6m × 0.3m, height 0.7m or 1.8m)
+- Plants (0.2m × 0.2m, height 0.4m)
+- Vases (0.1m × 0.1m, height 0.2m)
+
+**Office/Study:**
+- Table/Desk (1.5m × 0.8m, height 0.75m)
+- Chair (0.6m × 0.6m, height 0.9m)
+- Shelf (1.2m × 0.4m, height 1.2-1.8m)
+- Lamp (0.25m × 0.25m, height 0.55m)
+
+**Closet/WIC:**
+- Wardrobe (1.2m × 0.6m, height 2.0m)
+- Dresser (1.0m × 0.5m, height 0.9m)
+- Shelf units along walls (0.6m depth, height 1.2-1.8m)
 
 ### 3. EXTRACTION PROCESS (Step-by-step internal reasoning)
 
@@ -72,79 +111,68 @@ User description: {{DESCRIPTION}}
 
 **Step 2: Wall Extraction**
 - Identify ALL wall segments (exterior + interior)
+- Walls are defined by path segments: [[x1, y1], [x2, y2]]
 - Exterior walls: typically 0.2m - 0.25m thick
 - Interior walls: typically 0.1m - 0.15m thick
-- Record exact coordinates for each wall segment
+- Standard wall height: 3.0m
 
 **Step 3: Room Identification** (CRITICAL)
 - Systematically scan every section of the floor plan
 - Identify and name EVERY enclosed space
-- Create precise polygon boundaries for each room
-- Cross-reference with text labels in image
-- Types to look for:
-  * Living/Family/Great Room
-  * Kitchen
-  * Dining Room
-  * Master Bedroom, Bedroom 2, 3, etc.
-  * Master Bath, Bathroom, Powder Room
-  * Walk-in Closet, Closet
-  * Hallway, Entry, Foyer
-  * Laundry, Utility Room
-  * Pantry, Storage
-  * Office, Study, Den
-  * Garage (if included in plan)
-  * Balcony, Patio, Deck
+- Create precise polygon boundaries for each room (closed path)
+- Format: "polygon": [[x1, y1], [x2, y2], [x3, y3], [x4, y4]]
 
 **Step 4: Openings Extraction**
-- Identify all doors (look for swing arcs)
-  * Standard interior: 0.8m - 0.9m × 2.1m
-  * Entry doors: 0.9m - 1.0m × 2.1m
-  * Record swing direction: L (left), R (right), S (sliding), B (bifold), P (pocket)
-- Identify all windows
-  * Standard: 1.2m × 1.2m
-  * Large/picture: 2.0m+ wide
-  * Record sill height (typically 0.9m)
+- Identify all doors and windows
+- For each opening:
+  * "host": wall ID it belongs to (e.g., "w1", "w2")
+  * "at": distance in meters along wall path from start point to center of opening
+  * "width": opening width in meters
+  * "height": opening height in meters
+  * "sill": for windows only, sill height from floor (typically 1.0m)
+  
+- Standard door: 0.9m × 2.1m
+- Standard window: 1.5m × 1.2m, sill 1.0m
 
-**Step 5: Furniture & Fixture Placement**
-- Check if furniture is shown in the plan
-- If YES: Extract all visible furniture with accurate dimensions and positions
-- If NO: Auto-generate furniture based on room type (see list above)
+**Step 5: Furniture Placement**
+- Use available categories based on room type (see lists above)
+- Position format: [x, y] where x and y are coordinates in meters
+- Dimensions format: [width, depth] in meters
+- Include height property in meters
+- Rotation: degrees clockwise from X-axis (0, 90, 180, 270)
 - Position furniture logically:
-  * Leave clear circulation paths (0.9m minimum)
-  * Center beds in bedrooms
-  * Place sofas facing focal points
+  * Leave circulation paths (0.9m minimum)
+  * Center beds/sofas in rooms
   * Align kitchen appliances along walls
-  * Position bathroom fixtures per standard layouts
+  * Place bathroom fixtures appropriately
+  * Position plants in corners or decorative spots
+  * Position lamps on tables/nightstands
+  * Mount artwork on walls (near wall coordinates)
 
-**Step 6: Dimensions & Measurements**
-- Verify all measurements are in meters
-- Ensure furniture doesn't overlap walls
-- Check that furniture sizes are proportional to rooms
+**Step 6: Coordinate System**
+- Origin (0,0) = bottom-left corner
+- X-axis = horizontal (width)
+- Y-axis = vertical (depth)
+- All measurements in METERS
 
 ## OUTPUT FORMAT (JSON ONLY):
 
 Return ONLY valid JSON with NO explanations, preambles, or markdown:
-
+```json
 {
-  "dimensions": { 
-    "width": 12.5, 
-    "depth": 10.2 
-  },
   "walls": [
     {
       "id": "w1",
-      "path": [[0, 0], [12.5, 0]],
+      "path": [[0, 0], [10, 0]],
       "thickness": 0.2,
-      "height": 3.0,
-      "type": "exterior"
+      "height": 3
     }
   ],
   "rooms": [
     {
       "id": "r1",
-      "polygon": [[0.2, 0.2], [6.0, 0.2], [6.0, 10.0], [0.2, 10.0]],
-      "name": "Living Room",
-      "area": 58.8
+      "polygon": [[0.2, 0.2], [9.8, 0.2], [9.8, 9.8], [0.2, 9.8]],
+      "name": "Living Room"
     }
   ],
   "openings": [
@@ -152,106 +180,68 @@ Return ONLY valid JSON with NO explanations, preambles, or markdown:
       "id": "d1",
       "type": "door",
       "host": "w1",
-      "at": 6.0,
-      "width": 0.9,
-      "height": 2.1,
-      "swing": "L",
-      "connects": ["r1", "r2"]
-    },
-    {
-      "id": "win1",
-      "type": "window",
-      "host": "w2",
-      "at": 3.0,
-      "width": 1.5,
-      "height": 1.2,
-      "sill_height": 0.9
+      "at": 5.0,
+      "width": 1.0,
+      "height": 2.1
     }
   ],
   "furniture": [
     {
-      "id": "f1",
       "category": "sofa",
-      "room": "r1",
-      "position": [3.0, 5.0],
-      "dimensions": [2.0, 0.9],
-      "height": 0.8,
+      "position": [2.5, 5],
+      "dimensions": [2.5, 1.0],
       "rotation": 90,
-      "description": "3-seater sofa"
+      "height": 0.85
     },
     {
-      "id": "f2",
       "category": "bed",
-      "room": "r3",
-      "position": [8.0, 5.0],
-      "dimensions": [1.8, 2.0],
-      "height": 0.5,
+      "position": [5, 3],
+      "dimensions": [2.0, 2.2],
       "rotation": 0,
-      "description": "King bed"
-    }
-  ],
-  "fixtures": [
-    {
-      "id": "fx1",
-      "type": "toilet",
-      "room": "r4",
-      "position": [10.5, 2.0],
-      "dimensions": [0.4, 0.6],
-      "height": 0.4,
-      "rotation": 90
+      "height": 0.5
     },
     {
-      "id": "fx2",
-      "type": "sink",
-      "room": "r4",
-      "position": [11.0, 3.5],
-      "dimensions": [0.6, 0.5],
-      "height": 0.85,
-      "rotation": 0
+      "category": "refrigerator",
+      "position": [1, 8],
+      "dimensions": [0.9, 0.8],
+      "rotation": 0,
+      "height": 1.8
+    },
+    {
+      "category": "toilet",
+      "position": [8, 2],
+      "dimensions": [0.5, 0.7],
+      "rotation": 90,
+      "height": 0.8
     }
   ]
 }
+```
 
-## RULES & STANDARDS:
+## KEY REQUIREMENTS FOR 3D RENDERER:
 
-### Coordinate System:
-- Origin (0,0) = bottom-left corner of floor plan
-- X-axis = horizontal (width)
-- Y-axis = vertical (depth)
-- All measurements in METERS
-
-### Wall Specifications:
-- "path": [[x1, y1], [x2, y2]] (start and end points)
-- "at": distance in meters from wall path[0] to center of opening
-- "type": "exterior" or "interior"
-
-### Furniture Categories:
-sofa, chair, armchair, table, coffee_table, dining_table, bed, nightstand, dresser, desk, cabinet, counter, island, appliance, bookshelf
-
-### Fixture Types:
-toilet, sink, bathtub, shower, vanity
-
-### Door Swing Types:
-- L = left swing
-- R = right swing  
-- S = sliding
-- B = bifold
-- P = pocket
-- D = double
-
-### Rotation:
-- 0° = aligned with X-axis
-- 90° = aligned with Y-axis
-- Measured clockwise from X-axis
+1. **Walls**: Must form complete enclosures, defined by path segments
+2. **Openings**: Must reference valid wall IDs in "host" field
+3. **Furniture Categories**: 
+   - **Living**: sofa, chair, table, tv_stand, electronics, shelf, plant, vase, lamp, artwork, rug
+   - **Kitchen**: refrigerator, stove, kitchen_cabinet, kitchen_counter, sink, table, chair, plant, vase
+   - **Bedroom**: bed, nightstand, wardrobe, dresser, chair, lamp, plant, artwork, rug
+   - **Bathroom**: toilet, bathtub, bathroom_sink, shower, bathroom_cabinet, plant, vase
+   - **Universal**: door, window
+4. **Position**: [x, y] format for all furniture/fixtures
+5. **Dimensions**: [width, depth] format
+6. **Height**: Required for all furniture items
+7. **Rotation**: In degrees (0, 90, 180, 270)
 
 ## QUALITY CHECKS:
-✓ ALL rooms identified (no missing bathrooms, closets, or small spaces)
-✓ Sum of room areas ≈ total floor area
-✓ All walls form complete enclosures
-✓ Furniture positioned without overlapping walls
-✓ Circulation paths maintained (0.9m minimum)
+✓ ALL rooms identified (no missing spaces)
+✓ All walls form complete rectangles/polygons
+✓ All openings have valid wall hosts
+✓ Furniture uses only allowed categories
+✓ Room-appropriate furniture (bed in bedroom, toilet in bathroom, etc.)
 ✓ All measurements in meters
-✓ Valid JSON format (no trailing commas, proper structure)
+✓ Valid JSON format (no trailing commas)
+✓ Furniture doesn't overlap walls
+✓ All furniture has position, dimensions, height, rotation
 
-REMEMBER: Output ONLY the JSON object, nothing else!`
-"""
+REMEMBER: Output ONLY the JSON object, nothing else!
